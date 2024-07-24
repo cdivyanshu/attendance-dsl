@@ -1,3 +1,8 @@
+# Provider Configuration
+provider "aws" {
+  region = "us-west-2"
+}
+
 # VPC
 resource "aws_vpc" "ot_microservices_dev" {
   cidr_block = "10.0.0.0/16"
@@ -9,9 +14,9 @@ resource "aws_vpc" "ot_microservices_dev" {
 
 # Subnets
 resource "aws_subnet" "database_subnet" {
-  vpc_id                  = aws_vpc.ot_microservices_dev.id
-  cidr_block              = "10.0.1.0/24"
-  availability_zone       = "us-west-2a"
+  vpc_id            = aws_vpc.ot_microservices_dev.id
+  cidr_block        = "10.0.1.0/24"
+  availability_zone = "us-west-2a"
 
   tags = {
     Name = "database-subnet"
@@ -19,9 +24,9 @@ resource "aws_subnet" "database_subnet" {
 }
 
 resource "aws_subnet" "application_subnet" {
-  vpc_id                  = aws_vpc.ot_microservices_dev.id
-  cidr_block              = "10.0.2.0/24"
-  availability_zone       = "us-west-2b"
+  vpc_id            = aws_vpc.ot_microservices_dev.id
+  cidr_block        = "10.0.2.0/24"
+  availability_zone = "us-west-2b"
 
   tags = {
     Name = "application-subnet"
@@ -76,16 +81,18 @@ resource "aws_security_group" "bastion_security_group" {
   }
 }
 
-# ALB
+# ALB Load Balancer
 resource "aws_lb" "front_end" {
-  name               = "front-end"
+  name               = "frontend-lb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_security_group.id]
   subnets            = [aws_subnet.database_subnet.id, aws_subnet.application_subnet.id]
 
+  enable_deletion_protection = false
+
   tags = {
-    Name = "front-end"
+    Name = "frontend-lb"
   }
 }
 
@@ -96,7 +103,7 @@ resource "aws_lb_listener" "front_end" {
   protocol          = "HTTP"
 
   default_action {
-    type             = "fixed-response"
+    type = "fixed-response"
     fixed_response {
       content_type = "text/plain"
       message_body = "Default action"
@@ -134,6 +141,7 @@ resource "aws_security_group" "attendance_security_group" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
+    # ipv6_cidr_blocks = ["::/0"]
   }
 }
 
@@ -231,15 +239,15 @@ resource "aws_autoscaling_group" "attendance_autoscaling" {
     version = "$Default"
   }
   vpc_zone_identifier = [aws_subnet.application_subnet.id]
-  target_group_arns   = [aws_lb_target_group.attendance_target_group.arn]
+  target_group_arns = [aws_lb_target_group.attendance_target_group.arn]
 }
 
 resource "aws_autoscaling_policy" "attendance" {
-  name                   = "attendance-autoscaling-policy"
-  policy_type            = "TargetTrackingScaling"
-  adjustment_type        = "ChangeInCapacity"
-  estimated_instance_warmup = 300
-  autoscaling_group_name = aws_autoscaling_group.attendance_autoscaling.name
+  name                        = "attendance-autoscaling-policy"
+  policy_type                 = "TargetTrackingScaling"
+  adjustment_type             = "ChangeInCapacity"
+  estimated_instance_warmup   = 300
+  autoscaling_group_name      = aws_autoscaling_group.attendance_autoscaling.name
 
   target_tracking_configuration {
     predefined_metric_specification {
