@@ -12,6 +12,40 @@ resource "aws_vpc" "ot_microservices_dev" {
   }
 }
 
+# Create an Internet Gateway
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id = aws_vpc.ot_microservices_dev.id
+
+  tags = {
+    Name = "internet-gateway"
+  }
+}
+
+# Route Table
+resource "aws_route_table" "route_table" {
+  vpc_id = aws_vpc.ot_microservices_dev.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.internet_gateway.id
+  }
+
+  tags = {
+    Name = "route-table"
+  }
+}
+
+# Associate Route Table with Subnets
+resource "aws_route_table_association" "database_subnet_association" {
+  subnet_id      = aws_subnet.database_subnet.id
+  route_table_id = aws_route_table.route_table.id
+}
+
+resource "aws_route_table_association" "application_subnet_association" {
+  subnet_id      = aws_subnet.application_subnet.id
+  route_table_id = aws_route_table.route_table.id
+}
+
 # Subnets
 resource "aws_subnet" "database_subnet" {
   vpc_id            = aws_vpc.ot_microservices_dev.id
@@ -141,7 +175,6 @@ resource "aws_security_group" "attendance_security_group" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    # ipv6_cidr_blocks = ["::/0"]
   }
 }
 
@@ -194,9 +227,8 @@ resource "aws_lb_listener_rule" "attendance_rule" {
 }
 
 # Launch Template for Attendance
-
 resource "aws_launch_template" "attendance_launch_template" {
-  name = "attendance-template"
+  name = "attendance-template-unique"  # Updated Launch Template name
 
   block_device_mappings {
     device_name = "/dev/sdf"
@@ -214,7 +246,7 @@ resource "aws_launch_template" "attendance_launch_template" {
   }
 
   key_name      = "backend"
-  image_id      = "ami-0075013580f6322a1"  # Updated AMI ID
+  image_id      = "ami-0075013580f6322a1"
   instance_type = "t2.micro"
 
   tag_specifications {
