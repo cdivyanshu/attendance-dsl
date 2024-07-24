@@ -1,3 +1,60 @@
+# VPC
+resource "aws_vpc" "ot_microservices_dev" {
+  cidr_block = "10.0.0.0/16"
+
+  tags = {
+    Name = "ot_microservices_dev"
+  }
+}
+
+# ALB Security Group
+resource "aws_security_group" "alb_security_group" {
+  vpc_id = aws_vpc.ot_microservices_dev.id
+  name   = "alb-security-group"
+
+  tags = {
+    Name = "alb-security-group"
+  }
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# Bastion Security Group
+resource "aws_security_group" "bastion_security_group" {
+  vpc_id = aws_vpc.ot_microservices_dev.id
+  name   = "bastion-security-group"
+
+  tags = {
+    Name = "bastion-security-group"
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
 # ATTENDANCE
 
 resource "aws_security_group" "attendance_security_group" {
@@ -34,7 +91,7 @@ resource "aws_security_group" "attendance_security_group" {
 # instance
 
 resource "aws_instance" "attendance_instance" {
-  ami           = "ami-0646a2db03a898068"
+  ami           = "ami-04a81a99f5ec58529"
   subnet_id = aws_subnet.database_subnet.id
   vpc_security_group_ids = [aws_security_group.attendance_security_group.id]
   instance_type = "t2.micro"
@@ -101,8 +158,7 @@ resource "aws_launch_template" "attendance_launch_template" {
   }
 
   key_name      = "backend"
-  # ami to be replaced with actual ami currently not right
-  image_id      = "ami-05eb8291d90fc00c8"
+  image_id      = "ami-04a81a99f5ec58529"
   instance_type = "t2.micro"
 
   tag_specifications {
