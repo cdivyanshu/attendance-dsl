@@ -76,6 +76,19 @@ resource "aws_security_group" "bastion_security_group" {
   }
 }
 
+# ALB
+resource "aws_lb" "front_end" {
+  name               = "front-end"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_security_group.id]
+  subnets            = [aws_subnet.database_subnet.id, aws_subnet.application_subnet.id]
+
+  tags = {
+    Name = "front-end"
+  }
+}
+
 # ALB Listener
 resource "aws_lb_listener" "front_end" {
   load_balancer_arn = aws_lb.front_end.arn
@@ -121,7 +134,6 @@ resource "aws_security_group" "attendance_security_group" {
     to_port          = 0
     protocol         = "-1"
     cidr_blocks      = ["0.0.0.0/0"]
-    # ipv6_cidr_blocks = ["::/0"]
   }
 }
 
@@ -173,7 +185,6 @@ resource "aws_lb_listener_rule" "attendance_rule" {
   }
 }
 
-
 # launch template for attendance
 
 resource "aws_launch_template" "attendance_launch_template" {
@@ -207,21 +218,20 @@ resource "aws_launch_template" "attendance_launch_template" {
   }
 }
 
-
 # auto scaling for attendance
 
 resource "aws_autoscaling_group" "attendance_autoscaling" {
   name                      = "attendance-autoscale"
   max_size                  = 2
   min_size                  = 0
-  desired_capacity = 0
+  desired_capacity          = 0
   health_check_grace_period = 300
   launch_template {
     id      = aws_launch_template.attendance_launch_template.id
     version = "$Default"
   }
   vpc_zone_identifier = [aws_subnet.application_subnet.id]
-  target_group_arns = [aws_lb_target_group.attendance_target_group.arn]
+  target_group_arns   = [aws_lb_target_group.attendance_target_group.arn]
 }
 
 resource "aws_autoscaling_policy" "attendance" {
