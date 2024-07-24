@@ -116,24 +116,24 @@ resource "aws_lb_listener" "front_end" {
 
 resource "aws_security_group" "attendance_security_group" {
   vpc_id = aws_vpc.ot_microservices_dev.id
-  name = "attendance-security-group"
+  name   = "attendance-security-group"
 
   tags = {
     Name = "attendance-security-group"
   }
-  
+
   ingress {
     from_port        = 8080
     to_port          = 8080
     protocol         = "tcp"
-    security_groups = [aws_security_group.alb_security_group.id]
+    security_groups  = [aws_security_group.alb_security_group.id]
   }
 
   ingress {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    security_groups = [aws_security_group.bastion_security_group.id]
+    security_groups  = [aws_security_group.bastion_security_group.id]
   }
 
   egress {
@@ -145,24 +145,24 @@ resource "aws_security_group" "attendance_security_group" {
   }
 }
 
-# instance
+# Instance
 
 resource "aws_instance" "attendance_instance" {
-  ami           = "ami-04a81a99f5ec58529"
-  subnet_id = aws_subnet.database_subnet.id
+  ami                    = "ami-0075013580f6322a1"
+  subnet_id              = aws_subnet.database_subnet.id
   vpc_security_group_ids = [aws_security_group.attendance_security_group.id]
-  instance_type = "t2.micro"
-  key_name = "backend"
+  instance_type          = "t2.micro"
+  key_name               = "backend"
 
   tags = {
     Name = "Attendance"
   }
 }
 
-# target group and attachment
+# Target Group and Attachment
 
 resource "aws_lb_target_group" "attendance_target_group" {
-  name     = "attendnace-tg"
+  name     = "attendance-tg"
   port     = 80
   protocol = "HTTP"
   target_type = "instance"
@@ -175,7 +175,7 @@ resource "aws_lb_target_group_attachment" "attendance_target_group_attachment" {
   port             = 8080
 }
 
-# listener rule
+# Listener Rule
 
 resource "aws_lb_listener_rule" "attendance_rule" {
   listener_arn = aws_lb_listener.front_end.arn
@@ -193,7 +193,7 @@ resource "aws_lb_listener_rule" "attendance_rule" {
   }
 }
 
-# launch template for attendance
+# Launch Template for Attendance
 
 resource "aws_launch_template" "attendance_launch_template" {
   name = "attendance-template"
@@ -214,7 +214,7 @@ resource "aws_launch_template" "attendance_launch_template" {
   }
 
   key_name      = "backend"
-  image_id      = "ami-04a81a99f5ec58529"
+  image_id      = "ami-0075013580f6322a1"  # Updated AMI ID
   instance_type = "t2.micro"
 
   tag_specifications {
@@ -226,7 +226,7 @@ resource "aws_launch_template" "attendance_launch_template" {
   }
 }
 
-# auto scaling for attendance
+# Auto Scaling for Attendance
 
 resource "aws_autoscaling_group" "attendance_autoscaling" {
   name                      = "attendance-autoscale"
