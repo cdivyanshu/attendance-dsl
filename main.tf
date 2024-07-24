@@ -7,6 +7,27 @@ resource "aws_vpc" "ot_microservices_dev" {
   }
 }
 
+# Subnets
+resource "aws_subnet" "database_subnet" {
+  vpc_id                  = aws_vpc.ot_microservices_dev.id
+  cidr_block              = "10.0.1.0/24"
+  availability_zone       = "us-west-2a"
+
+  tags = {
+    Name = "database-subnet"
+  }
+}
+
+resource "aws_subnet" "application_subnet" {
+  vpc_id                  = aws_vpc.ot_microservices_dev.id
+  cidr_block              = "10.0.2.0/24"
+  availability_zone       = "us-west-2b"
+
+  tags = {
+    Name = "application-subnet"
+  }
+}
+
 # ALB Security Group
 resource "aws_security_group" "alb_security_group" {
   vpc_id = aws_vpc.ot_microservices_dev.id
@@ -52,6 +73,22 @@ resource "aws_security_group" "bastion_security_group" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+# ALB Listener
+resource "aws_lb_listener" "front_end" {
+  load_balancer_arn = aws_lb.front_end.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "fixed-response"
+    fixed_response {
+      content_type = "text/plain"
+      message_body = "Default action"
+      status_code  = "200"
+    }
   }
 }
 
