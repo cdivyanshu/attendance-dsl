@@ -126,7 +126,7 @@ resource "aws_security_group" "employee_security_group" {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    security_groups  = [aws_security_group.bastion_security_group.id]
+    security_groups  = [aws_security_group.alb_security_group.id]
   }
 
   egress {
